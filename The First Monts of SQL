@@ -1,0 +1,62 @@
+--1.Calculate the number of wards in each building
+SELECT Building, COUNT(*) AS 'Number of wards'
+FROM Wards
+GROUP BY Building;
+
+--2. Show the total financing of departments on each floor
+SELECT Floor, SUM(Financing) AS 'Total financing of departments'
+FROM Departments
+GROUP BY Floor;
+
+--3. Calculate the number of wards in buildings 2–5, considering only wards above the 2nd floor
+SELECT Building, COUNT(*) AS 'Number of wards'
+FROM Wards
+WHERE Floor > 2
+  AND Building BETWEEN 2 AND 5
+GROUP BY Building;
+
+--4. Determine the earliest examination start time for each day of the week
+SELECT DayOfWeek, MIN(StartTime) AS 'Earliest examination start'
+FROM Examinations
+GROUP BY DayOfWeek;
+
+--5. Show buildings where the number of wards is greater than 5
+SELECT Building, COUNT(*) AS 'Number of wards'
+FROM Wards
+GROUP BY Building
+HAVING COUNT(*) > 5;
+
+--6. Show buildings where the total financing of departments exceeds 120000
+SELECT Building, SUM(Financing) AS 'Total financing'
+FROM Departments
+GROUP BY Building
+HAVING SUM(Financing) > 120000;
+
+--7. For each day of the week, show: minimum examination duration (minutes), average duration (minutes), and number of examinations.
+Include only days where the maximum duration is greater than the hospital-wide average.**
+SELECT 
+    DayOfWeek,
+    MIN(DATEDIFF(MINUTE, StartTime, EndTime)) AS 'Minimum duration',
+    AVG(DATEDIFF(MINUTE, StartTime, EndTime)) AS 'Average duration',
+    COUNT(*) AS 'Number of examinations'
+FROM Examinations
+GROUP BY DayOfWeek
+HAVING MAX(DATEDIFF(MINUTE, StartTime, EndTime)) >
+       (SELECT AVG(DATEDIFF(MINUTE, StartTime, EndTime)) FROM Examinations);
+
+--8. Show buildings where the number of wards is greater than the average number of wards per building
+SELECT Building, COUNT(*) AS 'Number of wards'
+FROM Wards
+GROUP BY Building
+HAVING COUNT(*) > (
+    SELECT AVG(MidCount)
+    FROM (
+        SELECT COUNT(*) AS MidCount
+        FROM Wards
+        GROUP BY Building
+    ) AS MidCountTable
+);
+
+
+
+
