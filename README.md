@@ -25,3 +25,4 @@ Each query is based on real assignments and covers essential topics for junior a
 Based in Stockholm, Sweden  
 Learning SQL, Python, Power BI, and full-cycle analytics  
 Building a public portfolio through GitHub and LinkedIn
+www.linkedin.com/in/vitalii-nikitin-120a06392
