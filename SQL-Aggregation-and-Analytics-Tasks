@@ -108,6 +108,5 @@ HAVING AVG(Salary) = (
             )
         )
         GROUP BY Position
-    ) AS X)
-
+    ) AS X
 );
