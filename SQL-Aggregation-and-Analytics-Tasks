@@ -1,0 +1,113 @@
+--1. Determine the number of teachers for each position.
+SELECT Position, COUNT(*) AS 'Number of Teachers'
+FROM Teachers
+GROUP BY Position
+ORDER BY Position;
+
+--2. Determine the average salary of teachers for each position.
+SELECT Position, ROUND(AVG(Salary), 2) AS 'Average Salary'
+FROM Teachers
+GROUP BY Position;
+
+--3. Determine the maximum and minimum premium for each position.
+SELECT Position,
+       MIN(Premium) AS 'Minimum Premium',
+       MAX(Premium) AS 'Maximum Premium'
+FROM Teachers
+GROUP BY Position;
+
+--4. Determine the number of groups by rating and course year.
+SELECT Year, Rating, COUNT(*) AS 'Number of Groups'
+FROM Groups
+GROUP BY Year, Rating
+ORDER BY Year;
+
+--5. Determine the number of teachers and the average salary
+--   for each position where at least five teachers work.
+SELECT Position,
+       COUNT(*) AS 'Number of Teachers',
+       ROUND(AVG(Salary), 2) AS 'Average Salary'
+FROM Teachers
+GROUP BY Position
+HAVING COUNT(*) > 5;
+
+--6. Determine the courses and the corresponding number of groups
+--   for which the average rating is below 4.
+SELECT Year,
+       COUNT(*) AS 'Number of Groups',
+       AVG(Rating) AS 'Average Rating'
+FROM Groups
+GROUP BY Year
+HAVING AVG(Rating) < 4;
+
+--7. Determine the number, minimum, and maximum salary of teachers
+--   for positions where more than three teachers work.
+SELECT Position,
+       MIN(Salary) AS 'Minimum Salary',
+       MAX(Salary) AS 'Maximum Salary',
+       COUNT(*) AS 'Total Teachers'
+FROM Teachers
+GROUP BY Position
+HAVING COUNT(*) > 3;
+
+--8. Display the names of departments and their funding
+--   if the funding is greater than the average funding across all departments.
+SELECT Name, Financing
+FROM Departments
+WHERE Financing > (
+    SELECT AVG(Financing)
+    FROM Departments
+);
+
+--9. Display teachers who work in positions with an average salary
+--   greater than 25000.
+SELECT Surname, Name, Salary
+FROM Teachers
+WHERE Position IN (
+    SELECT Position
+    FROM Teachers
+    GROUP BY Position
+    HAVING AVG(Salary) > 25000
+);
+
+--10. Find the positions with the highest total salary of teachers.
+SELECT Position, SUM(Salary) AS 'Total Salary'
+FROM Teachers
+GROUP BY Position
+HAVING SUM(Salary) = (
+    SELECT MAX(MaxSalary)
+    FROM (
+        SELECT SUM(Salary) AS MaxSalary
+        FROM Teachers
+        GROUP BY Position
+    ) AS x
+);
+
+--11. Find the position with the highest average salary among those
+--    positions where the average premium is lower than the overall
+--    average premium across all positions.
+SELECT Position, AVG(Salary) AS 'Average Salary'
+FROM Teachers
+GROUP BY Position
+HAVING AVG(Salary) = (
+    SELECT MAX(AVGSal)
+    FROM (
+        SELECT AVG(Salary) AS AVGSal
+        FROM Teachers
+        WHERE Position IN (
+            SELECT Position
+            FROM Teachers
+            GROUP BY Position
+            HAVING AVG(Premium) < (
+                SELECT AVG(AvgPre)
+                FROM (
+                    SELECT AVG(Premium) AS AvgPre
+                    FROM Teachers
+                    GROUP BY Position
+                ) AS Y
+            )
+        )
+        GROUP BY Position
+    ) AS X)
+
+);
