@@ -1,0 +1,173 @@
+SQL Tasks (UNION, JOINs, ANY/ALL, Correlated Subqueries)
+1. Show all management positions of the academy (department heads and deans) with their unit names and building numbers
+SELECT  
+       t.Name + N' ' + t.Surname AS FullName,
+       N'Head of Department' AS Position,
+       dep.Name AS Unit,
+       dep.Building AS Building
+FROM Departments dep
+JOIN Heads h ON dep.HeadId = h.Id
+JOIN Teachers t ON h.TeacherId = t.Id
+
+UNION ALL
+
+SELECT  
+       t.Name + N' ' + t.Surname AS FullName,
+       N'Dean' AS Position,
+       f.Name AS Unit,
+       f.Building AS Building
+FROM Faculties f
+JOIN Deans d ON f.DeanId = d.Id
+JOIN Teachers t ON d.TeacherId = t.Id;
+
+
+
+2. Show all morning and evening classes with group, subject, teacher, and lecture room
+SELECT 
+       sc.Class AS ClassNumber,
+       N'Morning' AS Shift,
+       g.Name AS GroupName,
+       s.Name AS SubjectName,
+       t.Name + N' ' + t.Surname AS Teacher,
+       lr.Name AS Room
+FROM Lectures l
+JOIN Teachers t ON l.TeacherId = t.Id
+JOIN GroupsLectures gl ON l.Id = gl.LectureId
+JOIN Groups g ON gl.GroupId = g.Id
+JOIN Subjects s ON l.SubjectId = s.Id
+JOIN Schedules sc ON l.Id = sc.LectureId
+JOIN LectureRooms lr ON lr.Id = sc.LectureRoomId
+WHERE sc.Class BETWEEN 1 AND 4
+
+UNION ALL
+
+SELECT 
+       sc.Class AS ClassNumber,
+       N'Evening' AS Shift,
+       g.Name AS GroupName,
+       s.Name AS SubjectName,
+       t.Name + N' ' + t.Surname AS Teacher,
+       lr.Name AS Room
+FROM Lectures l
+JOIN Teachers t ON l.TeacherId = t.Id
+JOIN GroupsLectures gl ON l.Id = gl.LectureId
+JOIN Groups g ON gl.GroupId = g.Id
+JOIN Subjects s ON l.SubjectId = s.Id
+JOIN Schedules sc ON l.Id = sc.LectureId
+JOIN LectureRooms lr ON lr.Id = sc.LectureRoomId
+WHERE sc.Class BETWEEN 5 AND 8
+ORDER BY ClassNumber;
+
+
+
+3. Show all technical and humanitarian disciplines with teachers and groups
+SELECT 
+     f.Name AS Faculty,
+     dep.Name AS Department,
+     N'Technical' AS Direction,
+     t.Name + N' ' + t.Surname AS Teacher,
+     g.Name AS GroupName
+FROM Teachers t
+JOIN Deans d ON t.Id = d.TeacherId
+JOIN Faculties f ON d.Id = f.DeanId
+JOIN Departments dep ON dep.FacultyId = f.Id
+JOIN Groups g ON g.DepartmentId = dep.Id
+WHERE f.Id BETWEEN 1 AND 5 OR f.Id = 10
+
+UNION ALL
+
+SELECT 
+     f.Name AS Faculty,
+     dep.Name AS Department,
+     N'Humanitarian' AS Direction,
+     t.Name + N' ' + t.Surname AS Teacher,
+     g.Name AS GroupName
+FROM Teachers t
+JOIN Deans d ON t.Id = d.TeacherId
+JOIN Faculties f ON d.Id = f.DeanId
+JOIN Departments dep ON dep.FacultyId = f.Id
+JOIN Groups g ON g.DepartmentId = dep.Id
+WHERE f.Id BETWEEN 6 AND 9
+ORDER BY Direction;
+
+
+
+4. Show all lectures and the groups registered for them (NULL if no groups)
+SELECT 
+      s.Name AS Lecture,
+      g.Name AS GroupName
+FROM Subjects s
+LEFT JOIN Lectures l ON s.Id = l.SubjectId
+LEFT JOIN GroupsLectures gl ON gl.LectureId = l.Id
+LEFT JOIN Groups g ON gl.GroupId = g.Id;
+
+
+
+5. Show all teachers and their subjects (NULL if no subjects)
+SELECT 
+      t.Name + N' ' + t.Surname AS Teacher,
+      s.Name AS Subject
+FROM Teachers t
+LEFT JOIN Lectures l ON t.Id = l.TeacherId
+LEFT JOIN Subjects s ON s.Id = l.SubjectId;
+
+
+
+6. Find teachers who teach in at least one room located in building 1 or 2 (ANY)
+SELECT 
+       t.Name + N' ' + t.Surname AS Teacher,
+       lr.Building AS Building
+FROM Teachers t
+JOIN Lectures l ON l.TeacherId = t.Id
+JOIN Schedules s ON s.LectureId = l.Id
+JOIN LectureRooms lr ON s.LectureRoomId = lr.Id
+WHERE lr.Building = ANY (
+    SELECT Building
+    FROM LectureRooms
+    WHERE Building = 1 OR Building = 2
+);
+
+
+
+7. Show lecture rooms that host more classes than any room in building 1 (ALL)
+SELECT 
+      lr.Name AS Room,
+      COUNT(*) AS ClassCount
+FROM LectureRooms lr
+JOIN Schedules s ON lr.Id = s.LectureRoomId
+GROUP BY lr.Name
+HAVING COUNT(*) > ALL (
+    SELECT CountLec
+    FROM (
+        SELECT COUNT(s.LectureRoomId) AS CountLec
+        FROM Schedules s
+        JOIN LectureRooms lr ON s.LectureRoomId = lr.Id
+        WHERE lr.Building = 1
+        GROUP BY lr.Name
+    ) AS x
+);
+
+
+
+8. Show lecture rooms that have more classes than the average number of classes in their building (correlated subquery)
+SELECT 
+       lr.Name AS Room,
+       COUNT(*) AS ClassCount
+FROM LectureRooms lr
+JOIN Schedules s ON lr.Id = s.LectureRoomId
+GROUP BY lr.Id, lr.Name, lr.Building
+HAVING COUNT(*) >
+(
+    SELECT AVG(cnt)
+    FROM (
+        SELECT COUNT(*) AS cnt
+        FROM LectureRooms lr2
+        JOIN Schedules s2 ON lr2.Id = s2.LectureRoomId
+        WHERE lr2.Building = lr.Building
+        GROUP BY lr2.Id
+    ) AS x
+);
+
+
+
+
