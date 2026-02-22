@@ -1,0 +1,89 @@
+📘 SQL Tasks — Solutions (English Version)
+1. Select assignments where the maximum score is lower than the average score of all assignments in the same course
+SELECT
+    a.MaxPoints AS 'Max Points',
+    a.Title AS 'Assignment Title',
+    c.Title AS 'Course Title'
+FROM Assignments a
+JOIN Courses c ON c.Id = a.CourseId
+WHERE a.MaxPoints < (
+    SELECT AVG(a2.MaxPoints)
+    FROM Assignments a2
+    WHERE a2.CourseId = a.CourseId
+);
+
+
+
+2. Find students who scored higher than the average grade of their course
+SELECT
+    s.FirstName + N' ' + s.LastName AS 'Student',
+    e.Grade AS 'Grade'
+FROM Students s
+JOIN Enrollments e ON e.StudentId = s.Id
+WHERE e.Grade > (
+    SELECT AVG(e2.Grade)
+    FROM Enrollments e2
+    WHERE e2.CourseId = e.CourseId
+);
+
+
+
+3. Find teachers whose students’ average grade on their courses is lower than the overall average grade in the database
+SELECT
+    t.FirstName + N' ' + t.LastName AS 'Teacher',
+    AVG(e.Grade) AS 'Average Grade'
+FROM Teachers t
+JOIN TeacherCourses tc ON tc.TeacherId = t.Id
+JOIN Courses c ON c.Id = tc.CourseId
+JOIN Enrollments e ON e.CourseId = c.Id
+GROUP BY t.Id, t.FirstName, t.LastName
+HAVING AVG(e.Grade) < (
+    SELECT AVG(e2.Grade)
+    FROM Enrollments e2
+);
+
+
+
+4. Select students in each course whose number of completed assignments is higher than the average number of completed assignments in that course
+SELECT
+    c.Title AS 'Course',
+    s.FirstName + N' ' + s.LastName AS 'Student',
+    COUNT(*) AS 'Completed Assignments'
+FROM Students s
+JOIN StudentAssignments sa ON sa.StudentId = s.Id
+JOIN Assignments a ON a.Id = sa.AssignmentId
+JOIN Courses c ON c.Id = a.CourseId
+GROUP BY c.Title, s.FirstName + N' ' + s.LastName, a.CourseId
+HAVING COUNT(*) > (
+    SELECT AVG(Tack)
+    FROM (
+        SELECT COUNT(*) AS Tack
+        FROM Assignments a2
+        JOIN StudentAssignments sa2 ON sa2.AssignmentId = a2.Id
+        JOIN Students s2 ON s2.Id = sa2.StudentId
+        WHERE a2.CourseId = a.CourseId
+        GROUP BY sa2.StudentId
+    ) AS X
+);
+
+
+
+5. Select students whose average grade is higher than the average grade of students born in the same year
+SELECT
+    s.FirstName + N' ' + s.LastName AS 'Student',
+    AVG(e.Grade) AS 'Average Grade'
+FROM Students s
+JOIN Enrollments e ON e.StudentId = s.Id
+GROUP BY s.Id, s.FirstName, s.LastName, s.BirthDate
+HAVING AVG(e.Grade) > (
+    SELECT AVG(AvgGrade)
+    FROM (
+        SELECT AVG(e2.Grade) AS AvgGrade
+        FROM Enrollments e2
+        JOIN Students s2 ON s2.Id = e2.StudentId
+        WHERE YEAR(s2.BirthDate) = YEAR(s.BirthDate)
+        GROUP BY s2.Id
+    ) AS X
+)
+ORDER BY
+
